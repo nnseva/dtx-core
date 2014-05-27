@@ -9,7 +9,7 @@ urls.py
 urlpatterns = patterns('',
     url(r'^example/test/(?P<item_id>.*)/',
         'example.views.gw2test',
-        { 'api': ''https://api.guildwars2.com/v1/'' }
+        { 'api': 'https://api.guildwars2.com/v1/' }
     ),
 )
 ```
