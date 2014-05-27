@@ -1,10 +1,11 @@
-### Django Twisted Extensions - Core
+# Django Twisted Extensions - Core
 
-Django Twisted Extensions - Core
+`Django Twisted Extensions` is meant to add an ability to develop async request handlers
+in `Django` projects
 
-### Simple Example
+## Simple Example
 
-urls.py
+#### urls.py
 ```py
 urlpatterns = patterns('',
     url(r'^example/test/(?P<item_id>.*)/',
@@ -14,7 +15,7 @@ urlpatterns = patterns('',
 )
 ```
 
-views.py
+#### views.py
 ```py
 @inlineCallbacks
 def gw2test(request, item_id, api):
@@ -22,3 +23,7 @@ def gw2test(request, item_id, api):
     details = json.loads(x)
     returnValue(HttpResponse(str(details['name']), content_type='text/plain'))
 ```
+
+## License
+
+MIT
