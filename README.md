@@ -1,10 +1,8 @@
 # Django Twisted Extensions - Core
-
-`Django Twisted Extensions` is meant to add an ability to develop async request handlers
-in `Django` projects
+This project is meant to add an ability to develop async request handlers
+in `Django` projects.
 
 ## Simple Example
-
 #### urls.py
 ```py
 urlpatterns = patterns('',
@@ -24,8 +22,10 @@ def gw2test(request, item_id, api):
     returnValue(HttpResponse(str(details['name']), content_type='text/plain'))
 ```
 
-## License
+## Examples
+For more examples please see [dtx-examples](https://github.com/TigerND/dtx-examples)
 
+## License
 The MIT License (MIT)
 
 Copyright (c) 2013, 2014 Alexander Zykov
