@@ -12,8 +12,8 @@ from twisted.internet.task import \
 from twisted.internet.threads import \
     deferToThread
 
-#from dtx.web.client.defer import \
-#    deferToRemote, iterateRemote
+from dtx.web.client.defer import \
+    deferToRemote, iterateRemote
 
 __all__ = [
     '_DefGen_Return',
@@ -29,6 +29,6 @@ __all__ = [
     'maybeDeferred',
     'deferLater',
     'deferToThread',
-    #'deferToRemote',
-    #'iterateRemote',
+    'deferToRemote',
+    'iterateRemote',
 ]

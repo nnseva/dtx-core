@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='dtx-core',
-    version='0.9.1',
+    version='0.9.2',
     description='Django Twisted Extensions - Core',
     author='Alexander Zykov',
     author_email='tigernwh@gmail.com',
@@ -27,6 +27,7 @@ setup(
         'dtx.web.core',
         'dtx.web.core.serializers',
         'dtx.web.client',
+        'dtx.web.client.defer',
         'dtx.web.server',
         'dtx.web.server.views',
         'dtx.wamp',
@@ -42,6 +43,7 @@ setup(
         'mako>=0.9.0',
         'ipaddr>=2.1.10',
         'netifaces>=0.8',
+        'PyYAML>=3.11',
         'ujson',
     ],
     classifiers = [
