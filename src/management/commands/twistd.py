@@ -20,8 +20,11 @@ from twisted.internet import reactor
 from dtx.core.logger.opts import options_list as dtx_logger_option_list
 from dtx.core.logger.conf import configure as dtx_logger_configure
 
+from dtx.process import started_process_list
+
 from dtx.core import logger
 log = logger.log(__name__)
+
 
 class Command(BaseCommand):
     can_import_settings = True
@@ -65,6 +68,11 @@ class Command(BaseCommand):
 
             log.msg(u'Running {}'.format(node_name))
             reactor.run()
+
+            # TODO: Implement proper shutdown process
+            for pid, process in started_process_list.items():
+                log.msg('Stalled subprocess: {}'.format(pid))
+                process.transport.signalProcess('KILL')
 
             log.msg(u'Finished')
         except Exception, exc:
