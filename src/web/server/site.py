@@ -34,6 +34,12 @@ from django.utils import translation
 from dtx.core.workflow import *
 from dtx.utils.snippets.sorted_collection import SortedCollection
 
+from django.core.handlers.base import BaseHandler
+
+from django.contrib.auth.middleware import AuthenticationMiddleware
+from django.contrib.sessions.middleware import SessionMiddleware
+from django.middleware.common import CommonMiddleware
+
 from dtx.core import logger
 log = logger.log(__name__)
 
@@ -96,7 +102,19 @@ def invokeResolverMatch(request, match):
     global current_requests
     from dtx.web import server
     with log.enter() as tm:
+        base_handler = BaseHandler()
         try:
+            base_handler.load_middleware()
+            # Preparing the request
+            request.COOKIES = {}
+            request.COOKIES['sessionid'] = request.getCookie('sessionid')
+            # Middleware
+            for middleware_method in base_handler._request_middleware:
+                try:
+                    response = middleware_method(request)
+                except:
+                    pass
+            # Args
             kwargs = match.kwargs
             content_type = request.getHeader('content-type')
             if (content_type):
@@ -114,6 +132,7 @@ def invokeResolverMatch(request, match):
                 content = request.content.read()
                 form = yaml.load(content)
             params = dict(chain(kwargs.iteritems(), form.iteritems()))
+            # Language
             accept_language = request.getHeader('accept-language')
             accept_language = accept_language if (accept_language) else 'en-US,en;q=0.8'
             from django.utils.translation.trans_real import parse_accept_lang_header
