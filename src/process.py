@@ -33,7 +33,10 @@ class WorkerProcess(ProcessProtocol):
     def processEnded(self, status):
         global started_process_list
         log.msg("Process %s ended, status %s" % (self.pid, unicode(status),))
-        del started_process_list[self.pid]
+        try:
+            del started_process_list[self.pid]
+        except:
+            pass
 
     def outReceived(self, data):
         print data

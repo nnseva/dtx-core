@@ -4,7 +4,9 @@
 
 from base import *
 
-import json
+import js
 import yaml
 import pickle
+
+json = js
 

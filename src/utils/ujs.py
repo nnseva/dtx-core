@@ -4,6 +4,7 @@
 
 ## use Ultrajson (https://github.com/esnme/ultrajson) if available
 try:
+   #raise Exception()
    import ujson
    json_lib = ujson
    json_loads = ujson.loads
