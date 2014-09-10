@@ -8,8 +8,10 @@ from dtx.web.core.serializers.base import SerializerBase, registry
 
 from datetime import date, datetime
 from decimal import Decimal
+
 import json
 
+from dtx.utils.cache import S
 
 from dtx.core import logger
 log = logger.log(__name__)
@@ -23,6 +25,8 @@ class JSONEncoder(json.JSONEncoder):
             obj = obj.isoformat()
         elif isinstance(obj, Decimal):
             obj = float(obj)
+        elif isinstance(obj, S):
+            obj = obj.__dict__
         else:
             obj = super(JSONEncoder, self).default(obj)
         return obj
