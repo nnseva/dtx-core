@@ -25,7 +25,7 @@ class JSONEncoder(json.JSONEncoder):
             obj = obj.isoformat()
         elif isinstance(obj, Decimal):
             obj = float(obj)
-        elif isinstance(obj, S):
+        elif hasattr(obj, '__dict__'):
             obj = obj.__dict__
         else:
             obj = super(JSONEncoder, self).default(obj)
