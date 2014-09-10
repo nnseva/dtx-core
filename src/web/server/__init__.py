@@ -42,9 +42,9 @@ class Generator:
         with saveRequest(self):
             return self.g.send(x)
 
-    def throw(self, t, v):
+    def throw(self, *args, **kwargs):
         with saveRequest(self):
-            return self.g.throw(t, v)
+            return self.g.throw(*args, **kwargs)
 
 def webMethod(f):
     @wraps(f)
