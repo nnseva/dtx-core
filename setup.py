@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='dtx-core',
-    version='0.9.6',
+    version='0.9.7',
     description='Django Twisted Extensions - Core',
     author='Alexander Zykov',
     author_email='tigernwh@gmail.com',
