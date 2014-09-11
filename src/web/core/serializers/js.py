@@ -17,10 +17,9 @@ log = logger.log(__name__)
 
 def normalize_datetime(x):
     if (x.tzinfo):
-        # Should be timezone.get_defaulttimezone() instead of timezone.utc?
         return x.astimezone(timezone.utc).replace(tzinfo=None)
     else:
-        return x
+        return normalize_datetime(timezone.make_aware(x), timezone.get_defaulttimezone())
         
 
 encoders = {}
