@@ -2,29 +2,42 @@
 # -*- coding: utf-8 -*-
 #
 
+from django.utils import timezone
+
 from dtx.web.core.serializers.base import SerializerBase, registry
 
-#from dtx.utils import ujs
-
-from datetime import date, datetime
+import datetime
 from decimal import Decimal
 
 import json
-
-from dtx.utils.cache import S
 
 from dtx.core import logger
 log = logger.log(__name__)
 
 
+def normalize_datetime(x):
+    if (x.tzinfo):
+        # Should be timezone.get_defaulttimezone() instead of timezone.utc?
+        return x.astimezone(timezone.utc).replace(tzinfo=None)
+    else:
+        return x
+        
+
+encoders = {}
+
+encoders[type(datetime.date.today())] = lambda x: x.isoformat()
+encoders[type(datetime.datetime.now())] = lambda x: normalize_datetime(x).isoformat() + 'Z'
+encoders[type(datetime.time())] = lambda x: x.isoformat()
+encoders[type(datetime.timedelta())] = lambda x: x.total_seconds()
+encoders[type(Decimal())] = lambda x: float(x)
+
+
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, datetime):
-            obj = obj.isoformat()
-        elif isinstance(obj, date):
-            obj = obj.isoformat()
-        elif isinstance(obj, Decimal):
-            obj = float(obj)
+        global encoders
+        tp = type(obj)
+        if (tp in encoders.keys()):
+            obj = encoders[tp](obj)
         elif hasattr(obj, '__dict__'):
             obj = obj.__dict__
         else:
@@ -52,8 +65,6 @@ class Serializer(SerializerBase):
     def deserialize(self, data, **kwargs):
         return loads(data)
 
-#loads = ujs.loads
-#dumps = ujs.dumps
 
 registry.register(Serializer)
 
