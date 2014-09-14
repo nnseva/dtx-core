@@ -15,17 +15,11 @@ log = logger.log(__name__)
 def start(host, port, sites=None):
     with log.enter() as tm:
         for family, socktype, proto, canonname, sockaddr in socket.getaddrinfo(host, port, 0, 0, socket.SOL_TCP):
-            sa_host, sa_port = sockaddr
+            log.msg(u'AddrInfo: {}'.format((family, socktype, proto, canonname, sockaddr)))
+            def unpack_sockaddr(*args):
+                return args[:2]
+            sa_host, sa_port = unpack_sockaddr(*sockaddr)
             log.msg('Starting HTTP at {}:{}'.format(sa_host, sa_port))
             uri = 'http://{}:{}/'.format(sa_host, sa_port)
             dtx_web_server.DtxWebSite.listen(uri, sites)
-	    '''
-            from dtx.web.client.defer import remote_nodes
-            for pattern, urlconf in sites:
-                try:
-                    m = import_module(urlconf)
-                    remote_nodes.addWorker(uri, urlconf)
-                except:
-                    pass
-            '''
 
