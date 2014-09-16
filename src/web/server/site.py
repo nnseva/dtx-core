@@ -47,6 +47,30 @@ log = logger.log(__name__)
 #
 ##############################################################################################################################
 
+def parse_accept_header(accept):
+    """Parse the Accept header *accept*, returning a list with pairs of
+    (media_type, q_value), ordered by q values.
+    """
+    result = []
+    for media_range in accept.split(","):
+        parts = media_range.split(";")
+        media_type = parts.pop(0)
+        media_params = []
+        q = 1.0
+        for part in parts:
+            (key, value) = part.lstrip().split("=", 1)
+            if key == "q":
+                q = float(value)
+            else:
+                media_params.append((key, value))
+        result.append((media_type, tuple(media_params), q))
+    result.sort(lambda x, y: -cmp(x[2], y[2]))
+    return result
+    
+##############################################################################################################################
+#
+##############################################################################################################################
+
 current_requests = []
 
 class RequestInvocationContext:
@@ -61,7 +85,7 @@ class RequestInvocationContext:
     @classmethod
     def create(cls, fn, request, args, kwargs):
         context = cls(fn, request, args, kwargs)
-        log.msg(u'New: {}'.format(unicode(context)))
+        log.debug(u'New: {}'.format(unicode(context)))
         return context
 
     def __unicode__(self):
@@ -85,13 +109,13 @@ class RequestInvocationContext:
     def dump_all(cls, current, framing):
         global current_requests
         try:
-            log.msg(framing)
+            log.debug(framing)
             idx = 1
             for ctx in current_requests:
-                log.msg(u'{} ({}) {}'.format('*' if (current == ctx) else ' ', idx, unicode(ctx)))
+                log.debug(u'{} ({}) {}'.format('*' if (current == ctx) else ' ', idx, unicode(ctx)))
                 idx += 1
         finally:
-            log.msg(framing)
+            log.debug(framing)
 
 ##############################################################################################################################
 #
@@ -105,15 +129,25 @@ def invokeResolverMatch(request, match):
         base_handler = BaseHandler()
         try:
             base_handler.load_middleware()
-            # Preparing the request
+            # META
+            request.META = {}
+            request.META['REQUEST_METHOD'] = request.method
+            # Cookies
             request.COOKIES = {}
             request.COOKIES['sessionid'] = request.getCookie('sessionid')
+            # Arguments
             request.GET = request.args
+            # Accept
+            accept = request.getHeader('accept')
+            if (accept):
+                log.debug(u'Accept: {}'.format(accept))
+                request.accept = parse_accept_header(accept)
+                request.META['HTTP_ACCEPT'] = accept
             # Args
-            kwargs = match.kwargs
             content_type = request.getHeader('content-type')
             if (content_type):
-                log.msg(u'Content-Type: {}'.format(content_type))
+                log.debug(u'Content-Type: {}'.format(content_type))
+                request.META['CONTENT_TYPE'] = content_type
                 request.content_type = content_type.split(';')
             else:
                 request.content_type = []
@@ -132,15 +166,18 @@ def invokeResolverMatch(request, match):
                 form = yaml.load(content)
             request.POST = form
             request.REQUEST = dict(chain(request.GET.iteritems(), request.POST.iteritems()))
+            # Parameters
+            kwargs = match.kwargs
             params = dict(chain(kwargs.iteritems(), form.iteritems()))
             # Language
             accept_language = request.getHeader('accept-language')
             accept_language = accept_language if (accept_language) else 'en-US,en;q=0.8'
+            request.META['HTTP_ACCEPT_LANGUAGE'] = accept_language
             from django.utils.translation.trans_real import parse_accept_lang_header
             langs = parse_accept_lang_header(accept_language)
-            log.msg(u'Accept-Language: {}'.format(unicode(langs)))
+            log.debug(u'Accept-Language: {}'.format(unicode(langs)))
             request.language = langs[0][0] if (langs) else settings.LANGUAGE_CODE
-            log.msg(u'Activating language: {}'.format(request.language))
+            log.debug(u'Activating language: {}'.format(request.language))
             translation.activate(request.language)
             # Middleware
             for middleware_method in base_handler._request_middleware:
@@ -151,40 +188,40 @@ def invokeResolverMatch(request, match):
             # Invoke
             server.currentRequest = request
             with RequestInvocationContext.create(match.func.fn, request, match.args, params) as ctx:
-                RequestInvocationContext.dump_all(ctx, u'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+                #RequestInvocationContext.dump_all(ctx, u'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
                 response = yield maybeDeferred(match.func.fn, request, *match.args, **params)
-                RequestInvocationContext.dump_all(ctx, u'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+                #RequestInvocationContext.dump_all(ctx, u'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
             if (issubclass(response.__class__, HttpResponse)):
-                log.msg('Response: HttpResponse')
+                log.debug('Response: HttpResponse')
                 cls = response.__class__
                 try:
                     content_type = response['content-type']
-                    log.msg(u'Content-Type: {}'.format(content_type))
+                    log.debug(u'Content-Type: {}'.format(content_type))
                     request.setHeader("Content-Type", content_type)
                 except:
-                    log.msg(u'Using default content type')
+                    log.debug(u'Using default content type')
                 for key, value in response.items():
                     request.setHeader(key, value)
                 status_code = response.__dict__.get('status_code', response.__class__.status_code)
-                log.msg(u'Status-Code: {}'.format(status_code))
+                log.debug(u'Status-Code: {}'.format(status_code))
                 request.setResponseCode(status_code)
                 content = response.content
                 if (content):
                     request.write(content)
             elif (isinstance(response, (unicode))):
-                log.msg('Response: UTF-8')
+                log.debug('Response: UTF-8')
                 request.write(response.encode('utf-8'))
             elif (isinstance(response, (str))):
-                log.msg('Response: Binary')
+                log.debug('Response: Binary')
                 request.write(response)
             else:
-                log.msg(u'Response: Unknown ({})'.format(type(response)))
+                log.debug(u'Response: Unknown ({})'.format(type(response)))
                 request.setHeader("Content-Type", 'application/python-pickle')
                 request.write(pickle.dumps(response))
             request.finish()
         except Exception, ex:
             log.err(traceback.format_exc())
-            log.msg(u'Response-Code: {}'.format(500))
+            log.debug(u'Response-Code: {}'.format(500))
             request.setResponseCode(500)
             request.write('500')
             request.finish()
@@ -332,7 +369,7 @@ class DtxXmlRpcResource(XMLRPC):
                     self.handlers[procedurePath] = handler
                     return handler
             except:
-                log.msg(traceback.format_exc(), logLevel=logging.ERROR)
+                log.err(traceback.format_exc())
                 raise xmlrpc.NoSuchFunction(self.NOT_FOUND, "Procedure %s not found" % procedurePath)
 
 class DtxWebSite(Site):
