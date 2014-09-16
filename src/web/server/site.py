@@ -125,9 +125,13 @@ def invokeResolverMatch(request, match):
             request.content_type_name = request.content_type[0] if (len(request.content_type) >= 1) else None
             request.content_type_args = request.content_type[1] if (len(request.content_type) >= 2) else None
             form = {}
+            # TODO: Make decoders registry
             if (request.content_type_name == 'application/python-pickle'):
                 content = request.content.read()
                 form = pickle.loads(content)
+            elif (request.content_type_name == 'application/json'):
+                content = request.content.read()
+                form = json.loads(content)
             elif (request.content_type_name == 'application/x-yaml'):
                 content = request.content.read()
                 form = yaml.load(content)
