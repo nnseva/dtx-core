@@ -108,6 +108,7 @@ def invokeResolverMatch(request, match):
             # Preparing the request
             request.COOKIES = {}
             request.COOKIES['sessionid'] = request.getCookie('sessionid')
+            request.__dict__[request.method] = request.args
             # Middleware
             for middleware_method in base_handler._request_middleware:
                 try:
