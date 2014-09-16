@@ -108,13 +108,7 @@ def invokeResolverMatch(request, match):
             # Preparing the request
             request.COOKIES = {}
             request.COOKIES['sessionid'] = request.getCookie('sessionid')
-            request.__dict__[request.method] = request.args
-            # Middleware
-            for middleware_method in base_handler._request_middleware:
-                try:
-                    response = middleware_method(request)
-                except:
-                    pass
+            request.GET = request.args
             # Args
             kwargs = match.kwargs
             content_type = request.getHeader('content-type')
@@ -136,6 +130,8 @@ def invokeResolverMatch(request, match):
             elif (request.content_type_name == 'application/x-yaml'):
                 content = request.content.read()
                 form = yaml.load(content)
+            request.POST = form
+            request.REQUEST = dict(chain(request.GET.iteritems(), request.POST.iteritems()))
             params = dict(chain(kwargs.iteritems(), form.iteritems()))
             # Language
             accept_language = request.getHeader('accept-language')
@@ -146,6 +142,13 @@ def invokeResolverMatch(request, match):
             request.language = langs[0][0] if (langs) else settings.LANGUAGE_CODE
             log.msg(u'Activating language: {}'.format(request.language))
             translation.activate(request.language)
+            # Middleware
+            for middleware_method in base_handler._request_middleware:
+                try:
+                    response = middleware_method(request)
+                except:
+                    pass
+            # Invoke
             server.currentRequest = request
             with RequestInvocationContext.create(match.func.fn, request, match.args, params) as ctx:
                 RequestInvocationContext.dump_all(ctx, u'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
