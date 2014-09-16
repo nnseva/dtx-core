@@ -19,7 +19,10 @@ urlpatterns = patterns('',
 def gw2test(request, item_id, api):
     x = yield getPage(api + 'item_details.json?item_id=' + str(item_id))
     details = json.loads(x)
-    returnValue(HttpResponse(str(details['name']), content_type='text/plain'))
+    returnValue(HttpResponse(
+        str(details['name']),
+        content_type='text/plain'
+    ))
 ```
 
 ## Examples
