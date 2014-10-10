@@ -391,7 +391,7 @@ class DtxWebSite(Site):
             return factory
 
     def buildProtocol(self, addr):
-        log.msg(u'Building protocol for {}'.format(addr))
+        log.debug(u'Building protocol for {}'.format(addr))
         return Site.buildProtocol(self, addr)
 
     def _search_web_sites(self, sites):
