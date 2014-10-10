@@ -12,6 +12,8 @@ from twisted.python import log as txlog
 import base
 import dummy
 
+from django.conf import settings
+
 class Printer:
     @classmethod
     def format(cls, message, logLevel=logging.INFO):
@@ -27,20 +29,22 @@ class Printer:
 
     @classmethod
     def write(cls, message, logLevel=logging.INFO):
-        if (logLevel <= logging.DEBUG):
-            print message
-        elif (logLevel >= logging.ERROR):
+        #if (logLevel <= logging.DEBUG):
+        #    print message
+        if (logLevel >= logging.ERROR):
             txlog.err(message)
         else:
             txlog.msg(message, logLevel=logLevel)
 
     @classmethod
     def msg(cls, message, logLevel=logging.INFO):
-        Printer.write(Printer.format(message, logLevel), logLevel = logLevel)
+        Printer.write(Printer.format(message, logLevel), logLevel=logLevel)
 
 class Block(base.Block):
 
-    def __init__(self, name=None, module=None, obj=None, args={}, parent=None, verbose=True):
+    def __init__(self, name=None, owner=None, obj=None, args={}, parent=None, verbose=True):
+        self.owner = owner
+        module = owner.module if owner else None
         self.name = module if module else u''
         if (obj):
             if (hasattr(obj, '__class__')):
@@ -64,7 +68,7 @@ class Block(base.Block):
     def __enter__(self):
         self.ts = datetime.datetime.now()
         if (self.verbose):
-            Printer.write(u'==> {}'.format(self.name), logLevel=logging.DEBUG)
+            self.owner.write(u'==> {}'.format(self.name), logLevel=logging.DEBUG)
         return self
 
     def __exit__(self, type, value, tb):
@@ -76,7 +80,7 @@ class Block(base.Block):
             else:
                 parent.children[self.name] = et
         if (self.verbose):
-            Printer.write(u'<== {}{}, time {}'.format(self.name, (u', {}'.format(self.result)) if self.result else '', et), logLevel=logging.DEBUG)
+            self.owner.write(u'<== {}{}, time {}'.format(self.name, (u', {}'.format(self.result)) if self.result else '', et), logLevel=logging.DEBUG)
             if (len(self.children) > 0):
                 ct = datetime.timedelta(0)
                 for cname in self.children.keys():
@@ -86,10 +90,10 @@ class Block(base.Block):
                 ctp = 100. - ((float(ct.total_seconds()) / float(et.total_seconds())) * 100.)
                 cts = '%3.2f' % (ctp)
                 if (cts <> '0.00'):
-                    Printer.write('--- Other: {} [{}%]'.format(et - ct, cts), logLevel=logging.DEBUG)
+                    self.owner.write('--- Other: {} [{}%]'.format(et - ct, cts), logLevel=logging.DEBUG)
 
     def msg(self, message, logLevel=logging.DEBUG):
-        Printer.msg(u'/{}/ {}'.format(unicode(self.time()), message), logLevel=logLevel)
+        self.owner.msg(u'/{}/ {}'.format(unicode(self.time()), message), logLevel=logLevel)
 
     def time(self):
         ts = datetime.datetime.now()
@@ -101,11 +105,26 @@ class Block(base.Block):
 class Logger(base.Logger):
     def __init__(self, module):
         self.module = module
+        self.logger = logging.getLogger(module)
+        self.msg(u'Logging for {}: {}'.format(module, self.logger.getEffectiveLevel()), logLevel=logging.CRITICAL)
 
     def enter(self, name=None, obj=None, args={}, parent=None, enabled=True, verbose=True):
         if (not enabled):
             return dummy.Block()
-        return Block(name, self.module, obj, args, parent, verbose)
+        return Block(name, self, obj, args, parent, verbose)
+
+    def write(self, message, logLevel=logging.INFO):
+        if (self.logger.isEnabledFor(logLevel)):
+            Printer.write(message, logLevel=logLevel)
 
     def msg(self, message, logLevel=logging.INFO):
-        Printer.msg(message, logLevel=logLevel)
+        if (self.logger.isEnabledFor(logLevel)):
+            Printer.msg(message, logLevel=logLevel)
+
+def load_logging_settings():
+    logging_settings = getattr(settings, 'DTX_LOGGING', {})
+    for key, value in logging_settings.iteritems():
+        logger = logging.getLogger(key)
+        logger.setLevel(value)
+
+load_logging_settings()
