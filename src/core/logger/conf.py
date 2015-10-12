@@ -26,10 +26,10 @@ def configure(**options):
 
     logFile = options.get('logfile', None)
     if logFile:
-        log.startLogging(DailyLogFile.fromFullPath(logFile))
+        # defaultMode=0644 # workaround for https://twistedmatrix.com/trac/ticket/7026
+        log.startLogging(DailyLogFile.fromFullPath(logFile,defaultMode=0644))
     else:
         log.startLogging(sys.stdout)
-
 
     #observer = log.PythonLoggingObserver()
     #observer.start()
