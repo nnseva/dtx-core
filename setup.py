@@ -4,10 +4,10 @@ from setuptools import setup
 
 setup(
     name='dtx-core',
-    version='0.9.15',
+    version='0.9.16',
     description='Django Twisted Extensions - Core',
     author='Alexander Zykov',
-    author_email='tigernwh@gmail.com',
+    author_email='tiger@mano.email',
     url='https://github.com/TigerND/dtx-core',
     package_dir={
         'dtx': 'src'
@@ -38,13 +38,15 @@ setup(
     data_files=[
     ],
     install_requires = [
-        'Twisted>=14.0.0',
+        'Twisted>=16.1.1',
         'autobahn>=0.8.3',
         'mako>=0.9.0',
         'ipaddr>=2.1.10',
         'netifaces>=0.8',
         'PyYAML>=3.11',
-        'ujson',
+        'pyOpenSSL>=16.0.0',
+        'service-identity>=16.0.0',
+        'ujson>=1.35',
     ],
     classifiers = [
         'Intended Audience :: Developers',
