@@ -37,7 +37,7 @@ class Command(BaseCommand):
             action='store',
             type='string',
             dest='node_name',
-            default='dtx.nodes.default',
+            default=getattr(settings, 'DTX_DEFAULT_NODE', 'dtx.nodes.default'),
             help='Node module to start',
         ),
         make_option('-O', '--option',
