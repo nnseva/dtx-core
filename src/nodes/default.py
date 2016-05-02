@@ -11,7 +11,7 @@ log = logger.log(__name__)
 
 def config(**kwargs):
     result = {
-        'DTX_WEB_HOST' = [
+        'DTX_WEB_HOST': [
             u'127.0.0.1',
         ],
         'DTX_WEB_PORT': 80 if settings.DEBUG else 8000
