@@ -47,6 +47,13 @@ class Command(BaseCommand):
             default=[],
             help='Node',
         ),
+        make_option('--thread-pool-size',
+            action='store',
+            type='string',
+            dest='thread_pool_size',
+            default=getattr(settings, 'DTX_THREAD_POOL_SIZE', 16),
+            help='Thread pool size',
+        ),
     )
 
     def handle(self, *args, **options):
@@ -55,7 +62,7 @@ class Command(BaseCommand):
             node_name = options.get('node_name')
             node_opts = options.get('node_opts')
 
-            thread_pool_size = getattr(settings, 'DTX_THREAD_POOL_SIZE', 16)
+            thread_pool_size = options.get('thread_pool_size')
             if (thread_pool_size):
                     reactor.suggestThreadPoolSize(thread_pool_size)
 
