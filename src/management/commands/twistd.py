@@ -33,12 +33,12 @@ class Command(BaseCommand):
     option_list += dtx_logger_option_list
 
     option_list += (
-        make_option('--process',
+        make_option('--node',
             action='store',
             type='string',
             dest='node_name',
-            default='nodes.web',
-            help='Process module to start',
+            default='dtx.nodes.default',
+            help='Node module to start',
         ),
         make_option('-O', '--option',
             action='append',
