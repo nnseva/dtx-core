@@ -23,7 +23,7 @@ def config(**kwargs):
             ),
         ],
     }
-    result['DTX_WEB_PORT'] = int(kwargs.get('port', settings.DTX_WEB_PORT if hasattr(settings, 'DTX_WEB_PORT') else default_port))
+    result['DTX_WEB_PORT'] = int(kwargs.get('port', getattr(settings, 'DTX_WEB_PORT', default_port)))
     return result
 
 def start(**kwargs):
