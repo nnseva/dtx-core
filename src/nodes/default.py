@@ -9,12 +9,13 @@ from dtx import process, node
 from dtx.core import logger
 log = logger.log(__name__)
 
+default_port = 80 if not settings.DEBUG else 8000
+
 def config(**kwargs):
     result = {
         'DTX_WEB_HOST': [
             u'127.0.0.1',
         ],
-        'DTX_WEB_PORT': 80 if settings.DEBUG else 8000,
         'DTX_WEB_SITES': [
             (
                 u'.*',
@@ -22,9 +23,7 @@ def config(**kwargs):
             ),
         ],
     }
-    port = kwargs.get('port', settings.DTX_WEB_PORT if hasattr(settings, 'DTX_WEB_PORT') else 8000)
-    if (port):
-        result['DTX_WEB_PORT'] = port
+    result['DTX_WEB_PORT'] = int(kwargs.get('port', settings.DTX_WEB_PORT if hasattr(settings, 'DTX_WEB_PORT') else default_port))
     return result
 
 def start(**kwargs):
@@ -32,14 +31,16 @@ def start(**kwargs):
     
     conf = config(**kwargs)
     
+    host = conf['DTX_WEB_HOST']
+    port = conf['DTX_WEB_PORT']
+    sites = conf['DTX_WEB_SITES']
+    
     try:
         from setproctitle import setproctitle
-        setproctitle('django-twisted @ port {}'.format(conf['DTX_WEB_HOST']))
+        setproctitle('django-twisted @ port {}'.format(port))
     except:
         pass
 
-    port = conf['DTX_WEB_PORT']
-    sites = conf['DTX_WEB_SITES']
     for host in conf['DTX_WEB_HOST']:
         log.msg('Starting web node at {}:{}...'.format(host, port))
         node.start('dtx.web.server.node',
