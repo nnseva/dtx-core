@@ -24,6 +24,7 @@ def config(**kwargs):
         ],
     }
     result['DTX_WEB_PORT'] = int(kwargs.get('port', getattr(settings, 'DTX_WEB_PORT', default_port)))
+    result['DTX_WEB_PROCTITLE'] = kwargs.get('proctitle', getattr(settings, 'DTX_WEB_PROCTITLE', 'django-twisted'))
     return result
 
 def start(**kwargs):
@@ -37,7 +38,7 @@ def start(**kwargs):
     
     try:
         from setproctitle import setproctitle
-        setproctitle('django-twisted @ port {}'.format(port))
+        setproctitle('{} @ port {}'.format(conf['DTX_WEB_PROCTITLE'], port))
     except:
         pass
 
