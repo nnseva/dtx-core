@@ -1,8 +1,8 @@
 # Django Twisted Extensions - Core
 
 [![Join the chat at https://gitter.im/TigerND/dtx-core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TigerND/dtx-core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-This project is meant to add an ability to develop async request handlers
-in `Django` projects.
+
+Django Twisted library is designed to add ability to write stateful asynchronous applications using Django and Twisted.
 
 ## Simple Example
 #### urls.py
