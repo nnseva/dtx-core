@@ -288,7 +288,7 @@ class DtxTwistedWebResource(Resource):
     def _search_callbacks(self, urlconf):
         urlpatterns = urlconf.__dict__.get('urlpatterns', [])
         for item in urlpatterns:
-            if (issubclass(item.__class__, urlresolvers.RegexURLPattern)):
+            if (hasattr(item, '_callback_str')):
                 callback_str = item.__dict__.get('_callback_str', None)
                 if (callback_str):
                     self._add_callback(callback_str)

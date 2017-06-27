@@ -8,7 +8,6 @@ import traceback
 import logging
 
 from itertools import chain
-from optparse import make_option
 from importlib import import_module
 
 from django.conf import settings
@@ -25,13 +24,13 @@ from dtx.process import started_process_list
 from dtx.core import logger
 log = logger.log(__name__)
 
+from django import get_version
+from distutils.version import LooseVersion
 
-class Command(BaseCommand):
-    can_import_settings = True
-
+if (LooseVersion(get_version()) < LooseVersion('1.8')):
+    from optparse import make_option
     option_list  = BaseCommand.option_list
     option_list += dtx_logger_option_list
-
     option_list += (
         make_option('--node',
             action='store',
@@ -55,6 +54,49 @@ class Command(BaseCommand):
             help='Thread pool size',
         ),
     )
+else:
+    option_list = ()
+    option_list += dtx_logger_option_list
+    option_list += (
+        dict(args=('--node',),
+            kw=dict(
+                action='store',
+                type=str,
+                dest='node_name',
+                default=getattr(settings, 'DTX_DEFAULT_NODE', 'dtx.nodes.default'),
+                help='Node module to start',
+            )
+        ),
+        dict(args=('-O', '--option'),
+            kw=dict(
+                action='append',
+                type=str,
+                dest='node_opts',
+                default=[],
+                help='Node',
+            )
+        ),
+        dict(args=('--thread-pool-size',),
+            kw=dict(
+                action='store',
+                type=str,
+                dest='thread_pool_size',
+                default=getattr(settings, 'DTX_THREAD_POOL_SIZE', 16),
+                help='Thread pool size',
+            )
+        ),
+    )
+
+class Command(BaseCommand):
+    can_import_settings = True
+
+    if (LooseVersion(get_version()) < LooseVersion('1.8')):
+        option_list = option_list
+    else:
+        @classmethod
+        def add_arguments(cls,parser):
+            for o in option_list:
+                parser.add_argument(*o['args'],**o['kw'])
 
     def handle(self, *args, **options):
         try:
