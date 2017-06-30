@@ -314,6 +314,7 @@ class RemoteDeferrer:
         else:
             self.name = '.'.join((fn.__module__, fn.__name__))
         self.uri, self.urlconf = resolveAddress(self.name, None, *args, **kwargs)
+        #self.uri, self.urlconf = None, None
         self.method_name = 'GET'
         self.method_kwargs = None
 
@@ -321,6 +322,8 @@ class RemoteDeferrer:
     def process(self):
         global remote_nodes, deferSettings, agentsPool
         with log.enter() as tm:
+            #if not self.uri:
+            #    self.uri, self.urlconf = resolveAddress(self.name, None, *self.args, **self.kwargs)
             if not self.uri:
                 raise Exception('URI for {} is not resolved (args={}, kwargs={}) in {}'.format(self.name, self.args, self.kwargs, unicode(remote_nodes)))
             while True:

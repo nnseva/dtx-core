@@ -25,6 +25,7 @@ from twisted.web.resource import Resource
 from twisted.web.xmlrpc import XMLRPC, withRequest
 from twisted.web.wsgi import WSGIResource
 from twisted.web import xmlrpc
+from twisted.python.failure import Failure
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -194,7 +195,11 @@ def invokeResolverMatch(request, match):
             server.currentRequest = request
             with RequestInvocationContext.create(match.func.fn, request, match.args, params) as ctx:
                 #RequestInvocationContext.dump_all(ctx, u'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-                response = yield maybeDeferred(match.func.fn, request, *match.args, **params)
+                try:
+                    response = yield maybeDeferred(match.func.fn, request, *match.args, **params)
+                except Exception:
+                    Failure().printTraceback()
+                    raise
                 #RequestInvocationContext.dump_all(ctx, u'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
             if (issubclass(response.__class__, HttpResponse)):
                 log.debug('Response: HttpResponse')
