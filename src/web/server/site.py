@@ -31,6 +31,11 @@ from django.http import HttpResponse
 from django.core import urlresolvers
 from django.utils import translation
 
+try:
+    from django.urls.resolvers import RegexURLPattern,RegexURLResolver
+except ImportError:
+    from django.core.urlresolvers import RegexURLPattern,RegexURLResolver
+
 from dtx.core.workflow import *
 from dtx.utils.snippets.sorted_collection import SortedCollection
 
@@ -288,7 +293,7 @@ class DtxTwistedWebResource(Resource):
     def _search_callbacks(self, urlconf):
         urlpatterns = urlconf.__dict__.get('urlpatterns', [])
         for item in urlpatterns:
-            if (hasattr(item, '_callback_str')):
+            if (issubclass(item.__class__, RegexURLPattern)):
                 callback_str = item.__dict__.get('_callback_str', None)
                 if (callback_str):
                     self._add_callback(callback_str)
@@ -297,7 +302,7 @@ class DtxTwistedWebResource(Resource):
                     self._add_callback(callback_str)
                     item._callback = None
                     item._callback_str = callback_str
-            elif (issubclass(item.__class__, urlresolvers.RegexURLResolver)):
+            elif (issubclass(item.__class__, RegexURLResolver)):
                 self._search_callbacks(item.urlconf_name)
 
     def render_request(self, request, method):
