@@ -31,6 +31,11 @@ from django.http import HttpResponse
 from django.core import urlresolvers
 from django.utils import translation
 
+try:
+    from django.urls.resolvers import RegexURLPattern,RegexURLResolver
+except ImportError:
+    from django.core.urlresolvers import RegexURLPattern,RegexURLResolver
+
 from dtx.core.workflow import *
 from dtx.utils.snippets.sorted_collection import SortedCollection
 
@@ -228,16 +233,19 @@ def invokeResolverMatch(request, match):
     returnValue(None)
 
 class DtxCallbackInfo:
-    def __init__(self, name):
+    def __init__(self, name, callback):
         self.name = name
+        self._callback = callback
         self.count = 1
 
     def __unicode__(self):
         return u'({}) {}'.format(self.count, self.name)
 
     def callback(self):
-        path = name.split('.')
-        return import_module('.'.join(path[:-1])).__dict__[path[-1]]
+        if not self._callback:
+            path = name.split('.')
+            self._callback = import_module('.'.join(path[:-1])).__dict__[path[-1]]
+        return self._callback
 
 class DtxTwistedWebCallbackDecorator:
 
@@ -276,28 +284,38 @@ class DtxTwistedWebResource(Resource):
         try:
             cb = self.callbacks.find(name)
             cb.count += 1
-        except:
+            return cb.callback()
+        except Exception: # TODO!!! more precise
             path = name.split('.')
             mod = import_module('.'.join(path[:-1]))
             fun = mod.__dict__[path[-1]]
             if (not isinstance(fun, DtxTwistedWebCallbackDecorator)):
                 log.msg('Decorating {} ({})'.format(name, fun))
-                mod.__dict__[path[-1]] = DtxTwistedWebCallbackDecorator(fun)
-            self.callbacks.insert(DtxCallbackInfo(name))
+                fun = DtxTwistedWebCallbackDecorator(fun)
+                mod.__dict__[path[-1]] = fun
+            self.callbacks.insert(DtxCallbackInfo(name,fun))
+            return self.callbacks.find(name).callback()
 
     def _search_callbacks(self, urlconf):
         urlpatterns = urlconf.__dict__.get('urlpatterns', [])
         for item in urlpatterns:
-            if (hasattr(item, '_callback_str')):
-                callback_str = item.__dict__.get('_callback_str', None)
-                if (callback_str):
-                    self._add_callback(callback_str)
-                else:
-                    callback_str = '.'.join((item._callback.__module__, item._callback.__name__))
-                    self._add_callback(callback_str)
-                    item._callback = None
-                    item._callback_str = callback_str
-            elif (issubclass(item.__class__, urlresolvers.RegexURLResolver)):
+            if (issubclass(item.__class__, RegexURLPattern)):
+                if hasattr(item,'_callback'):
+                    callback_str = item.__dict__.get('_callback_str', None) # old Django
+                    if (callback_str):
+                        callback = self._add_callback(callback_str)
+                        item._callback = callback
+                    else:
+                        callback_str = '.'.join((item.callback.__module__, item.callback.__name__))
+                        callback = self._add_callback(callback_str)
+                        item._callback = callback
+                        #item._callback = None
+                        #item._callback_str = callback_str
+                else: # new Django
+                    callback_str = item.lookup_str
+                    callback = self._add_callback(callback_str)
+                    item.callback = callback
+            elif (issubclass(item.__class__, RegexURLResolver)):
                 self._search_callbacks(item.urlconf_name)
 
     def render_request(self, request, method):
