@@ -193,10 +193,10 @@ def invokeResolverMatch(request, match):
                     pass
             # Invoke
             server.currentRequest = request
-            with RequestInvocationContext.create(match.func.fn, request, match.args, params) as ctx:
+            with RequestInvocationContext.create(match.func, request, match.args, params) as ctx:
                 #RequestInvocationContext.dump_all(ctx, u'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
                 try:
-                    response = yield maybeDeferred(match.func.fn, request, *match.args, **params)
+                    response = yield maybeDeferred(match.func, request, *match.args, **params)
                 except Exception:
                     Failure().printTraceback()
                     raise
@@ -252,27 +252,6 @@ class DtxCallbackInfo:
             self._callback = import_module('.'.join(path[:-1])).__dict__[path[-1]]
         return self._callback
 
-class DtxTwistedWebCallbackDecorator:
-
-    def __init__(self, fn):
-        self.fn = fn
-        self.__name__ = fn.__name__
-        self.__module__ = fn.__module__
-
-    def __call__(self, request, *args, **kwargs):
-        log.err(u'=== DEPRECATED ===')
-        if reactor.running and request:
-            from dtx.web.client.defer import deferToRemote
-            return deferToRemote(request, self.fn, *args, **kwargs).get()
-        else:
-            from dtx.web.client.defer import remoteAddress
-            uri = remoteAddress(self.fn, request, *args, **kwargs)
-            log.warn(u'GET: {}'.format(uri))
-            return urllib2.urlopen(uri)
-
-    def s(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
-
 class DtxTwistedWebResource(Resource):
 
     def __init__(self, pattern, urlconf):
@@ -280,48 +259,6 @@ class DtxTwistedWebResource(Resource):
             Resource.__init__(self)
             self.pattern = pattern
             self.urlconf = urlconf
-            self.callbacks = SortedCollection(key=lambda x: x.name)
-            self._search_callbacks(urlconf)
-            for item in self.callbacks:
-                tm.msg(item)
-
-    def _add_callback(self, name):
-        try:
-            cb = self.callbacks.find(name)
-            cb.count += 1
-            return cb.callback()
-        except Exception: # TODO!!! more precise
-            path = name.split('.')
-            mod = import_module('.'.join(path[:-1]))
-            fun = mod.__dict__[path[-1]]
-            if (not isinstance(fun, DtxTwistedWebCallbackDecorator)):
-                log.msg('Decorating {} ({})'.format(name, fun))
-                fun = DtxTwistedWebCallbackDecorator(fun)
-                mod.__dict__[path[-1]] = fun
-            self.callbacks.insert(DtxCallbackInfo(name,fun))
-            return self.callbacks.find(name).callback()
-
-    def _search_callbacks(self, urlconf):
-        urlpatterns = urlconf.__dict__.get('urlpatterns', [])
-        for item in urlpatterns:
-            if (issubclass(item.__class__, RegexURLPattern)):
-                if hasattr(item,'_callback'):
-                    callback_str = item.__dict__.get('_callback_str', None) # old Django
-                    if (callback_str):
-                        callback = self._add_callback(callback_str)
-                        item._callback = callback
-                    else:
-                        callback_str = '.'.join((item.callback.__module__, item.callback.__name__))
-                        callback = self._add_callback(callback_str)
-                        item._callback = callback
-                        #item._callback = None
-                        #item._callback_str = callback_str
-                else: # new Django
-                    callback_str = item.lookup_str
-                    callback = self._add_callback(callback_str)
-                    item.callback = callback
-            elif (issubclass(item.__class__, RegexURLResolver)):
-                self._search_callbacks(item.urlconf_name)
 
     def render_request(self, request, method):
         with log.enter(obj=self) as tm:
@@ -348,6 +285,12 @@ class DtxTwistedWebResource(Resource):
 
     def render_POST(self, request):
         return self.render_request(request, 'POST')
+
+    def render_PUT(self, request):
+        return self.render_request(request, 'PUT')
+
+    def render_HEAD(self, request):
+        return self.render_request(request, 'HEAD')
 
 class DtxWSGIResource(WSGIResource):
 

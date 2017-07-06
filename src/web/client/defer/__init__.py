@@ -190,12 +190,12 @@ remote_nodes = RemoteNodes()
 
 def resolveAddress(name, urlconf, *args, **kwargs):
     global remote_nodes
-    with log.enter(args=dict(name=name, urlconf=unicode(urlconf))) as tm:
+    with log.enter(args=dict(urlconf=unicode(urlconf))) as tm:
         if urlconf:
             try:
                 uri = urlresolvers.reverse(name, urlconf, args, kwargs)
                 return (uri, urlconf)
-            except:
+            except Exception:
                 return resolveAddress(name, None, args, kwargs)
         else:
             for cf in remote_nodes.configs:
@@ -203,7 +203,7 @@ def resolveAddress(name, urlconf, *args, **kwargs):
                     urlconf = import_module(cf.urlconf)
                     uri = urlresolvers.reverse(name, urlconf, args, kwargs)
                     return (uri, urlconf)
-                except:
+                except Exception:
                     #log.msg(traceback.format_exc(), logLevel=logging.ERROR)
                     pass
             return (None, None)
@@ -211,7 +211,7 @@ def resolveAddress(name, urlconf, *args, **kwargs):
 def remoteAddress(fn, request, *args, **kwargs):
     global remote_nodes
     with log.enter() as tm:
-        name = '.'.join((fn.__module__, fn.__name__))
+        name = fn
         uri, urlconf = resolveAddress(name, request.urlconf if request else None, *args, **kwargs)
         if not uri:
             raise Exception('Cannot resolve URI for {} (args={}, kwargs={}) in {}'.format(name, args, kwargs, unicode(remote_nodes)))
@@ -309,10 +309,7 @@ class RemoteDeferrer:
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        if (isinstance(fn, six.string_types)):
-            self.name = fn
-        else:
-            self.name = '.'.join((fn.__module__, fn.__name__))
+        self.name = fn
         self.uri, self.urlconf = resolveAddress(self.name, None, *args, **kwargs)
         #self.uri, self.urlconf = None, None
         self.method_name = 'GET'
