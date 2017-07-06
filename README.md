@@ -9,7 +9,7 @@ Django Twisted library is designed to add ability to write stateful asynchronous
 ```py
 urlpatterns = [
     url(r'^example/test/(?P<item_id>.*)/',
-        'example.views.gw2test',
+        example.views.gw2test,
         { 'api': 'https://api.guildwars2.com/v1/' }
     )
 ]
