@@ -140,7 +140,8 @@ def invokeResolverMatch(request, match):
             request.META['REQUEST_METHOD'] = request.method
             # Cookies
             request.COOKIES = {}
-            request.COOKIES['sessionid'] = request.getCookie('sessionid')
+            session_id = getattr(settings, 'SESSION_COOKIE_NAME', 'sessionid')
+            request.COOKIES[session_id] = request.getCookie(session_id)
             # Arguments
             request.GET = request.args
             # Accept
