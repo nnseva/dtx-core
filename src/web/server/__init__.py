@@ -22,8 +22,9 @@ class saveRequest:
         #log.msg('=== RESTORING REQUEST ===')
         #log.msg(unicode(self.g.r))
         currentRequest = self.g.r
-        log.debug(u'Activating language: {}'.format(currentRequest.language))
-        translation.activate(currentRequest.language)
+        if currentRequest:
+            log.debug(u'Activating language: {}'.format(currentRequest.language))
+            translation.activate(currentRequest.language)
     def __exit__(self, type, value, tb):
         global currentRequest
         #log.msg('===== SAVING REQUEST ====')
